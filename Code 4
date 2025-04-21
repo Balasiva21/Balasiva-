@@ -1,0 +1,164 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyOoMPvG94Fcfwhspcvk6xfy",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Balasiva21/Balasiva-/blob/main/Code%204\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# ✅ Step 1: Install dependencies\n",
+        "!pip install -q langchain langchain-community langchain-google-genai faiss-cpu biopython google-generativeai\n",
+        "\n",
+        "# ✅ Step 2: Import necessary libraries\n",
+        "import os\n",
+        "from langchain_community.vectorstores import FAISS\n",
+        "from langchain.text_splitter import RecursiveCharacterTextSplitter\n",
+        "from langchain.chains import RetrievalQA\n",
+        "from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings\n",
+        "from Bio import Entrez\n",
+        "\n",
+        "# ✅ Step 3: API keys\n",
+        "os.environ[\"GOOGLE_API_KEY\"] = \"AIzaSyA7zpqJHh1bE8unQJYwYgzud2DJUAuDGoI\"  # Replace with your Gemini API key\n",
+        "Entrez.email = \"sivasundar81849@gmail.com\"  # Replace with your email for PubMed\n",
+        "\n",
+        "# ✅ Step 4: Fetch articles from PubMed\n",
+        "def fetch_pubmed_articles(query, max_results=5):\n",
+        "    handle = Entrez.esearch(db=\"pubmed\", term=query, retmax=max_results)\n",
+        "    record = Entrez.read(handle)\n",
+        "    ids = record[\"IdList\"]\n",
+        "    abstracts = []\n",
+        "    for pmid in ids:\n",
+        "        fetch = Entrez.efetch(db=\"pubmed\", id=pmid, rettype=\"abstract\", retmode=\"text\")\n",
+        "        abstract_text = fetch.read()\n",
+        "        abstracts.append(abstract_text)\n",
+        "    return abstracts\n",
+        "\n",
+        "# ✅ Step 5: Build vector store\n",
+        "def build_vectorstore_from_articles(articles):\n",
+        "    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)\n",
+        "    texts = text_splitter.create_documents(articles)\n",
+        "    embeddings = GoogleGenerativeAIEmbeddings(model=\"models/embedding-001\")\n",
+        "    vectorstore = FAISS.from_documents(texts, embeddings)\n",
+        "    return vectorstore\n",
+        "\n",
+        "# ✅ Step 6: Create Gemini-based QA system\n",
+        "def create_qa_chain(vectorstore):\n",
+        "    llm = ChatGoogleGenerativeAI(model=\"gemini-1.5-pro-latest\", temperature=0.2)\n",
+        "    retriever = vectorstore.as_retriever()\n",
+        "    qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=True)\n",
+        "    return qa_chain\n",
+        "\n",
+        "# ✅ Step 7: Ask your question\n",
+        "def ask_health_question(query, qa_chain):\n",
+        "    result = qa_chain(query)\n",
+        "    print(\"\\n🩺 Answer:\\n\")\n",
+        "    print(result[\"result\"])\n",
+        "    print(\"\\n📚 Sources:\")\n",
+        "    for i, doc in enumerate(result[\"source_documents\"]):\n",
+        "        print(f\"\\nSource {i+1}:\\n{doc.page_content[:500]}...\")\n",
+        "\n",
+        "# ✅ Step 8: Run everything interactively\n",
+        "if __name__ == \"__main__\":\n",
+        "    user_query = input(\"💬 Enter your medical/healthcare question: \")\n",
+        "\n",
+        "    print(\"\\n🔍 Searching PubMed for related research...\")\n",
+        "    articles = fetch_pubmed_articles(user_query, max_results=5)\n",
+        "\n",
+        "    if not articles:\n",
+        "        print(\"❌ No articles found on this topic. Try a different question.\")\n",
+        "    else:\n",
+        "        print(\"📚 Building knowledge base from PubMed articles...\")\n",
+        "        vectorstore = build_vectorstore_from_articles(articles)\n",
+        "\n",
+        "        print(\"🤖 Connecting to Gemini for answer generation...\")\n",
+        "        qa_chain = create_qa_chain(vectorstore)\n",
+        "\n",
+        "        ask_health_question(user_query, qa_chain)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "T682V1kK2Dj3",
+        "outputId": "b0225e85-1fdd-4c16-a0a6-bcd20da927f2"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "💬 Enter your medical/healthcare question: I want know diabetic symptoms\n",
+            "\n",
+            "🔍 Searching PubMed for related research...\n",
+            "📚 Building knowledge base from PubMed articles...\n",
+            "🤖 Connecting to Gemini for answer generation...\n",
+            "\n",
+            "🩺 Answer:\n",
+            "\n",
+            "This study focuses on risk factors for gestational diabetes, not general diabetes symptoms.  Therefore, I cannot answer your question using the provided context.\n",
+            "\n",
+            "📚 Sources:\n",
+            "\n",
+            "Source 1:\n",
+            "Publisher: 目的: 妊娠期糖尿病(gestational diabetes \n",
+            "mellitus，GDM)是临床上常见的妊娠合并症，对母婴近期或远期的健康均会产生不良的影响。GDM的危险因素复杂、多样，孕妇年龄越大、产次越多，GDM发病风险也越高。若这两个已知的独立危险因素在各组间的分布不均衡，可能会掩盖其他危险因素的作用。因此，本研究以初产孕妇为研究对象，采用年龄1꞉1配对设计的病例对照方法探究GDM发病的危险因素，旨在对存在高危因素的孕妇进行早期干预，以降低其在孕中后期发生GDM的可能性，促进母婴健康。方法: \n",
+            "回顾性收集2018年8月至2019年10月在厦门大学附属妇女儿童医院产科或营养科门诊定期行产检、营养咨询的2 425例孕妇的临床资料，根据纳入和排除标准，共2 \n",
+            "287例孕妇进入研究。在孕24~28周经口服葡萄糖耐量试验(oral glucose tolerance \n",
+            "test，OGTT)确诊为GDM且资料完整的231例孕妇纳入GDM组。在糖耐量正常且资料完整的孕妇中，以GDM组年龄段为匹配因素进行1꞉1配对，用随机数字方法随机选择231例孕妇作为对照组进入研究。受...\n",
+            "\n",
+            "Source 2:\n",
+            "the GDM group with more than 2 abortions, obesity or overweight before \n",
+            "pregnancy, the fasting blood glucose in the early pregnancy over 5.1 mmol/L were \n",
+            "significantly higher than those in the control group (all P<0.05). With the \n",
+            "uptrend of the cut-off point of the body weight gain before the 24th week during \n",
+            "the pregnancy, the risk of the GDM was gradually increasing. When the cut-off \n",
+            "point reached at 10 kg, the difference was significant (OR=1.988, P=0.004). The \n",
+            "level of HDL in the early p...\n",
+            "\n",
+            "Source 3:\n",
+            "the GDM group with more than 2 abortions, obesity or overweight before \n",
+            "pregnancy, the fasting blood glucose in the early pregnancy over 5.1 mmol/L were \n",
+            "significantly higher than those in the control group (all P<0.05). With the \n",
+            "uptrend of the cut-off point of the body weight gain before the 24th week during \n",
+            "the pregnancy, the risk of the GDM was gradually increasing. When the cut-off \n",
+            "point reached at 10 kg, the difference was significant (OR=1.988, P=0.004). The \n",
+            "level of HDL in the early p...\n",
+            "\n",
+            "Source 4:\n",
+            "GDM组孕前BMI、孕早期尿酸水平、孕早期FBG水平、孕13周前及孕24周前体重增长均高于对照组，差异均有统计学意义(均P<0.05)。GDM组孕早期LDL水平高于对照组，而HDL水平则低于对照组，差异均有统计学意义(均P<0.05)。GDM组流产超过2次、孕前超重或肥胖、孕早期FBG超过5.1 \n",
+            "mmol/L的比例均高于对照组，差异均有统计学意义(均P<0.05)。随着孕24周前体重增长切点值的上升，GDM发病风险也逐渐增加，当切点值达到10 \n",
+            "kg时，差异具有统计学意义(OR=1.988，P=0.004)。孕早期HDL≥1.6 \n",
+            "mmol/L是GDM的保护因素(OR=0.460，P=0.016)，而孕24周前体重增长超过10 kg(OR=1.743，P=0.032)、孕早期FBG超过 \n",
+            "5.1 mmol/L(OR=3.488，P=0.001)、孕早期LDL≥2.50 \n",
+            "mmol/L(OR=2.179，P=0.032)是GDM的危险因素。其中，孕早期FBG超过5.1 mmol/L对增加孕中后期发生GDM风险的影响最大。结论: \n",
+            "在初产孕妇中，排除年龄的影响后，孕早期FBG及孕早期LD...\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
