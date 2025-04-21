@@ -1,0 +1,102 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPPKxBB3vzaMidqa6tEcUUa",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Balasiva21/Balasiva-/blob/main/Code%202\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "W2o4czOZzzRh",
+        "outputId": "11e34312-aaa4-4763-f262-0de083ee8942"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "userHi\n",
+            "To determine \\( f^{-1}(1) \\) for the function \\( f(x) = 3x + \\cos(2x) \\), we need to find the value of \\( x \\) such that \\( f(x) = 1 \\). Here's the step-by-step reasoning:\n",
+            "\n",
+            "1. **Set up the equation**:\n",
+            "   \\[\n",
+            "   3x + \\cos(2x) = 1\n",
+            "   \\]\n",
+            "\n",
+            "2. **Test \\( x = 0 \\)**:\n",
+            "   \\[\n",
+            "   3(0) + \\cos(0) = 0 + 1 = 1\n",
+            "   \\]\n",
+            "   This satisfies the equation, so \\( x = 0 \\) is a solution.\n",
+            "\n",
+            "3. **Check uniqueness of the solution**:\n",
+            "   - Compute the derivative of \\( f(x) \\):\n",
+            "     \\[\n",
+            "     f'(x) = 3 - 2\\sin(2x)\n",
+            "     \\]\n",
+            "   - Since \\( \\sin(2x) \\in [-1, 1] \\), the term \\( -2\\sin(2x) \\) ranges between \\( -2 \\) and \\( 2 \\). Thus:\n",
+            "     \\[\n",
+            "     f'(x) \\in [3 - 2, 3 + 2] = [1, 5]\n",
+            "     \\]\n",
+            "   - The derivative \\( f'(x) > 0 \\) for all \\( x \\), meaning \\( f(x) \\) is **strictly increasing** and therefore **one-to-one**. This guarantees there is exactly one solution to \\( f(x) = 1 \\).\n",
+            "\n",
+            "4. **Conclusion**:\n",
+            "   Since \\( x = 0 \\) satisfies \\( f(x) = 1 \\) and the function is strictly increasing (no other solutions exist), the inverse function value is:\n",
+            "   \\[\n",
+            "   f^{-1}(1) = \\boxed{0}\n",
+            "   \\]\n"
+          ]
+        }
+      ],
+      "source": [
+        "Abfrom openai import OpenAI\n",
+        "\n",
+        "client = OpenAI(\n",
+        "    base_url=\"https://openrouter.ai/api/v1\",\n",
+        "    api_key=\"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\",  # Replace with your actual key\n",
+        ")\n",
+        "msg=input(\"user\")\n",
+        "try:\n",
+        "    completion = client.chat.completions.create(\n",
+        "        model=\"deepseek/deepseek-r1:free\",\n",
+        "        messages=[{\"role\": \"user\", \"content\": msg}]\n",
+        "    )\n",
+        "\n",
+        "    # Print full response to debug\n",
+        "    #print(completion)\n",
+        "\n",
+        "    # Extract and print response\n",
+        "    print(completion.choices[0].message.content)\n",
+        "\n",
+        "except Exception as e:\n",
+        "    print(f\"Error: {e}\")"
+      ]
+    }
+  ]
+}
